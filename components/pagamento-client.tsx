@@ -372,7 +372,6 @@ const [erroCartao, setErroCartao] = useState(false)
   <div>
 
     <div className="flex items-center gap-2 mb-5">
-
       <button
         type="button"
         onClick={() => setEtapa('metodo')}
@@ -384,103 +383,106 @@ const [erroCartao, setErroCartao] = useState(false)
       <h2 className="text-2xl font-bold text-neutral-900">
         Pagamento com cartão
       </h2>
-
     </div>
-
 
     {processandoCartao && (
       <div className="rounded-2xl bg-white p-8 text-center shadow-sm border">
-        <p className="font-bold text-lg">
+        <p className="font-bold text-lg animate-pulse">
           Processando pagamento...
         </p>
       </div>
     )}
 
-
     {erroCartao && (
       <div className="rounded-2xl bg-white p-8 shadow-sm border border-red-100">
-
         <h3 className="text-xl font-bold text-red-600">
           Compra rejeitada
         </h3>
-
         <p className="mt-2 text-sm text-neutral-500">
           Compra rejeitada pela administradora do cartão
         </p>
-
+        <button
+          type="button"
+          onClick={() => setErroCartao(false)}
+          className="mt-4 text-xs font-bold text-neutral-500 hover:text-neutral-800 underline uppercase tracking-wider"
+        >
+          Tentar outro cartão
+        </button>
       </div>
     )}
 
-
     {!processandoCartao && !erroCartao && (
-
       <div className="rounded-2xl bg-white p-6 shadow-sm border border-neutral-100 space-y-4">
 
-
+        {/* Input Número do Cartão com Máscara */}
         <input
+          type="text"
+          inputMode="numeric"
           value={numeroCartao}
-          onChange={(e)=>setNumeroCartao(e.target.value)}
+          onChange={lidarMudancaNumeroCartao}
           placeholder="Número do cartão"
-          className="w-full rounded-xl border px-4 py-3"
+          className="w-full rounded-xl border px-4 py-3 outline-none focus:border-black/30 transition-colors"
         />
 
-
+        {/* Input Nome do Titular (Permite letras normais) */}
         <input
+          type="text"
           value={nomeCartao}
-          onChange={(e)=>setNomeCartao(e.target.value)}
+          onChange={(e) => setNomeCartao(e.target.value)}
           placeholder="Nome do titular"
-          className="w-full rounded-xl border px-4 py-3"
+          className="w-full rounded-xl border px-4 py-3 outline-none focus:border-black/30 transition-colors"
         />
 
-
+        {/* Input CPF com Máscara */}
         <input
+          type="text"
+          inputMode="numeric"
           value={cpfCartao}
-          onChange={(e)=>setCpfCartao(e.target.value)}
+          onChange={lidarMudancaCPF}
           placeholder="CPF"
-          className="w-full rounded-xl border px-4 py-3"
+          className="w-full rounded-xl border px-4 py-3 outline-none focus:border-black/30 transition-colors"
         />
-
 
         <div className="grid grid-cols-2 gap-3">
-
+          
+          {/* Input Validade com Máscara */}
           <input
+            type="text"
+            inputMode="numeric"
             value={validadeCartao}
-            onChange={(e)=>setValidadeCartao(e.target.value)}
+            onChange={lidarMudancaValidade}
             placeholder="MM/AA"
-            className="rounded-xl border px-4 py-3"
+            className="rounded-xl border px-4 py-3 outline-none focus:border-black/30 transition-colors"
           />
 
-
+          {/* Input CVV com Máscara */}
           <input
+            type="text"
+            inputMode="numeric"
             value={cvvCartao}
-            onChange={(e)=>setCvvCartao(e.target.value)}
+            onChange={lidarMudancaCVV}
             placeholder="CVV"
-            className="rounded-xl border px-4 py-3"
+            className="rounded-xl border px-4 py-3 outline-none focus:border-black/30 transition-colors"
           />
 
         </div>
 
-
+        {/* Botão de Envio Dinâmico com Validação */}
         <button
           type="button"
           onClick={pagarComCartao}
-          className="
-            w-full rounded-xl 
-            bg-black py-4 
-            font-bold 
-            text-[#e5ff51]
-          "
+          disabled={!cartaoValido}
+          className="w-full rounded-xl bg-black py-4 font-bold text-[#e5ff51] transition-all disabled:opacity-40 disabled:cursor-not-allowed hover:bg-neutral-900"
         >
           Continuar pagamento
         </button>
 
-
       </div>
-
     )}
 
   </div>
 )}
+
         {/* ETAPA 3: GERADOR DE PIX INTEGRADO NA TELA COM CONTADOR */}
         {etapa === 'pix_gerado' && (
           <div className="mx-auto max-w-[560px] pt-4">
