@@ -6,28 +6,27 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-  
-  // 🔒 BLOQUEIO DE ACESSO DIRETO
+
+  // 🎭 MÁSCARA DA URL SECRETA (Processada antes de qualquer checagem de arquivo)
+  async rewrites() {
+    return {
+      beforeFiles: [
+        {
+          // Mapeia o acesso secreto para as pastas internas reais
+          source: '/matrix-entry-adm/:path*',
+          destination: '/admin/:path*',
+        },
+      ],
+    };
+  },
+
+  // 🔒 BLOQUEIO DA PASTA FÍSICA SE ALGUÉM TENTAR ENTRAR DIRETO
   async redirects() {
     return [
       {
-        // Se alguém tentar acessar QUALQUER coisa dentro de /admin fisicamente...
         source: '/admin/:path*',
-        // ...será barrado e expulso para a página inicial do seu site
         destination: '/',
         permanent: true,
-      },
-    ];
-  },
-
-  // 🎭 MÁSCARA DA URL SECRETA
-  async rewrites() {
-    return [
-      {
-        // Tudo o que você acessar usando /matrix-entry-adm/qualquer-coisa...
-        source: '/matrix-entry-adm/:path*',
-        // ...o Next.js vai ler por baixo dos panos na pasta física /admin/qualquer-coisa
-        destination: '/admin/:path*',
       },
     ];
   },
