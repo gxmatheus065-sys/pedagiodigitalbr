@@ -8,20 +8,9 @@ export default function LoginPage() {
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
-  const [isAuthorized, setIsAuthorized] = useState(false) // Bloqueio inicial de segurança
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
   useEffect(() => {
-    // 🔒 BARREIRA DE ACESSO: Expulsa se o usuário tentar entrar usando o link /admin/login diretamente
-    if (typeof window !== "undefined") {
-      if (window.location.pathname.startsWith("/admin")) {
-        router.replace("/")
-        return
-      } else {
-        setIsAuthorized(true) // Libera o painel se estiver acessando pela rota oculta
-      }
-    }
-
     const canvas = canvasRef.current
     if (!canvas) return
     const ctx = canvas.getContext("2d")
@@ -62,7 +51,7 @@ export default function LoginPage() {
       clearInterval(interval)
       window.removeEventListener("resize", handleResize)
     }
-  }, [router])
+  }, [])
 
   async function handleLogin() {
     setLoading(true)
@@ -74,16 +63,13 @@ export default function LoginPage() {
     })
     const data = await res.json()
     if (data.ok) {
-      // 🚀 REDIRECIONAMENTO CORRETO: Envia para a nova URL secreta mascarada
+      // 🚀 Envia direto para a rota mascarada sem conflito de código de cliente
       router.push("/matrix-entry-adm/pedidos")
     } else {
       setError("ACESSO_NEGADO: credenciais inválidas")
       setLoading(false)
     }
   }
-
-  // Impede que a tela do formulário pisque antes de aplicar o redirecionamento de segurança
-  if (!isAuthorized) return null
 
   return (
     <div style={{ position: "relative", minHeight: "100vh", background: "#0d0d0d", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "monospace" }}>
