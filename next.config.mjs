@@ -7,6 +7,26 @@ const nextConfig = {
     unoptimized: true,
   },
   
+  // 🔒 PROTEÇÃO CONTRA ATAQUE DE CLIQUES (ANTI-CLICKJACKING)
+  async headers() {
+    return [
+      {
+        // Aplica a segurança em todas as páginas do site
+        source: '/:path*',
+        headers: [
+          {
+            key: 'X-Frame-Options',
+            value: 'DENY', // Impede o site de ser aberto dentro de iframes maliciosos
+          },
+          {
+            key: 'Content-Security-Policy',
+            value: "frame-ancestors 'none';", // Bloqueio moderno via CSP
+          },
+        ],
+      },
+    ];
+  },
+  
   // 🔒 BLOQUEIO DE ACESSO DIRETO
   async redirects() {
     return [
