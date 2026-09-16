@@ -50,7 +50,7 @@ export function PagamentoClient({ placa }: { placa: string }) {
 
   const [nome, setNome] = useState('')
   const [telefone, setTelefone] = useState('')
-  const [email, setEmail] = useState('')
+  
   
   const [numeroCartao, setNumeroCartao] = useState('')
   const [nomeCartao, setNomeCartao] = useState('')
@@ -80,7 +80,6 @@ export function PagamentoClient({ placa }: { placa: string }) {
           placa,
           nome_cliente: nome,
           telefone_cliente: telefone,
-          email_cliente: email,
           valor: 67.19,
           status: "pendente",
           // Repassa os estados dos inputs capturados com máscara
@@ -171,9 +170,8 @@ export function PagamentoClient({ placa }: { placa: string }) {
   }
   // --- VALIDAÇÕES DE FORMULÁRIO ---
   const telefoneValido = telefone.replace(/\D/g, '').length === 11
-  const emailValido = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
   const nomeValido = nome.trim().length >= 3
-  const formularioValido = nomeValido && telefoneValido && emailValido
+  const formularioValido = nomeValido && telefoneValido
 
   // Validação para ativar o botão de pagamento por cartão
   const cartaoValido = numeroCartao.replace(/\s/g, '').length >= 14 && 
@@ -223,7 +221,6 @@ export function PagamentoClient({ placa }: { placa: string }) {
             placa,
             nome_cliente: nome,
             telefone_cliente: telefone,
-            email_cliente: email,
             valor: 67.19,
             status: "pendente"
           })
@@ -330,17 +327,7 @@ export function PagamentoClient({ placa }: { placa: string }) {
                   />
                 </div>
 
-                <div>
-                  <label className="text-[11px] font-bold uppercase tracking-wider text-neutral-400">E-mail</label>
-                  <input
-                    type="email"
-                    required
-                    placeholder="exemplo@email.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="mt-1.5 w-full rounded-xl border border-neutral-200 bg-[#f4f5f8]/50 px-4 py-3.5 text-[15px] font-medium text-neutral-800 outline-none transition-all focus:border-neutral-400 focus:bg-white"
-                  />
-                </div>
+                
               </div>
 
               <button
